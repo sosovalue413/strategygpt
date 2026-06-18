@@ -9,7 +9,6 @@ const links = [
   { href: "/", label: "Generator" },
   { href: "/markets", label: "Markets" },
   { href: "/history", label: "History" },
-  { href: "/onchain", label: "On-chain" },
   { href: "/methodology", label: "Method" }
 ];
 
