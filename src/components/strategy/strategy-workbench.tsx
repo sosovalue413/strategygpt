@@ -161,7 +161,7 @@ export function StrategyWorkbench() {
           </li>
           <li>
             <strong>Market data</strong>
-          <span>CMC ID mapping, latest quote, daily OHLCV candles, sentiment.</span>
+            <span>CMC ID mapping, latest quote, daily OHLCV candles, sentiment.</span>
           </li>
           <li>
             <strong>Backtest</strong>
