@@ -1,21 +1,28 @@
 # StrategyGPT AI
 
-StrategyGPT AI is a natural-language crypto strategy research workbench. A user describes a trading idea in plain English, and the app converts it into typed strategy intent, generated rules, CoinMarketCap-backed market data, deterministic backtests, risk analysis, optimized variants, and an on-chain attestation payload for the final report hash.
+StrategyGPT AI is a production-ready crypto strategy research workbench. It turns a plain-English market idea into a typed strategy plan, live CoinMarketCap-backed market context, deterministic indicator calculations, backtest results, risk notes, optimized variants, and a canonical report hash that can be attested on-chain.
 
-It is research software. It does not place trades, custody funds, request private keys in the browser, or promise returns.
+Live deployment: [https://strategygpt-ai.vercel.app](https://strategygpt-ai.vercel.app)
 
-## What It Does
+This is research software. It does not execute trades, custody funds, request wallet private keys, or promise returns.
 
-- Parses prompts such as `Build a balanced ETH momentum strategy for volatile markets.`
-- Uses OpenAI structured output with a deterministic local fallback.
-- Resolves crypto assets through CoinMarketCap IDs.
-- Pulls latest quotes, top listings, daily OHLCV candles, Fear & Greed, and trending assets when available.
-- Computes RSI, EMA, MACD, ATR, VWAP, Bollinger Bands, Momentum, rolling highs/lows, volume filters, fees, and slippage in application code.
-- Runs a deterministic long-only spot backtest and automatically selects an executable optimized variant if the first generated parameters produce no completed trades.
-- Persists reports to PostgreSQL when `DATABASE_URL` is configured, with local `.data` file fallback for development.
-- Exposes Prometheus-format metrics at `/api/metrics`.
-- Supports optional API gating with `STRATEGYGPT_API_TOKEN`.
-- Prepares EIP-1193 wallet calldata for the `StrategyRegistry` contract.
+## Product Flow
+
+1. A user describes a strategy idea, such as `Build a balanced BTC momentum strategy for volatile markets.`
+2. OpenAI structured output converts the prompt into typed strategy intent and rules. If parsing fails, a deterministic local fallback is used and the report records that provenance.
+3. CoinMarketCap resolves the asset, latest quote, top listings, daily OHLCV candles, sentiment, and trending assets when available.
+4. The local TypeScript engine calculates RSI, EMA, MACD, ATR, VWAP, Bollinger Bands, Momentum, rolling highs/lows, fees, slippage, trades, and equity curves.
+5. The optimizer tests real parameter variants and selects an executable variant when the initial generated rules produce no completed trades.
+6. The report is canonicalized and hashed for tamper-resistant verification.
+7. Optional wallet calldata can be prepared for a deployed `StrategyRegistry` contract.
+
+## Main Screens
+
+- `/` — strategy generator, live production status, prompt controls, pipeline overview, and generated report view.
+- `/markets` — live CoinMarketCap quote, top listings, Fear & Greed when available, and CMC trending assets.
+- `/history` — saved strategy reports from browser storage and the configured server store.
+- `/methodology` — how StrategyGPT separates language generation, market data, indicators, risk, storage, and proofs.
+- `/onchain` — advanced route for preparing StrategyRegistry attestations. It is intentionally not in the main navbar until a registry address is configured.
 
 ## Architecture
 
@@ -24,87 +31,75 @@ Next.js App Router UI
   |
   +-- /api/strategy/generate
   |     +-- OpenAI structured parser
-  |     +-- CoinMarketCap daily OHLCV/quote data
-  |     +-- TypeScript indicator + backtest engine
-  |     +-- Risk + optimizer engine
-  |     +-- Full-report canonical hash
+  |     +-- deterministic local parser fallback
+  |     +-- CoinMarketCap quote + daily OHLCV data
+  |     +-- indicator, backtest, risk, and optimizer engine
+  |     +-- canonical report hash
+  |
+  +-- /api/market/snapshot
+  |     +-- selected asset quote
+  |     +-- top listings
+  |     +-- trending assets
+  |     +-- sentiment when available
   |
   +-- /api/reports
-  |     +-- PostgreSQL store when DATABASE_URL is set
-  |     +-- .data file store fallback for local development
+  |     +-- PostgreSQL when DATABASE_URL is set
+  |     +-- local .data file fallback for development
+  |     +-- /tmp volatile fallback on Vercel without DATABASE_URL
   |
   +-- /api/onchain/prepare
-  |     +-- Server-side report hash verification
+  |     +-- report schema validation
+  |     +-- server-side proof recomputation
   |     +-- StrategyRegistry calldata
   |
-  +-- /api/metrics
-        +-- Prometheus-format API counters
+  +-- /api/health and /api/metrics
+        +-- runtime status and Prometheus-format counters
 ```
 
-Production packaging is included through `Dockerfile`, `docker-compose.yml`, and `k8s/strategygpt.yaml`.
-The app uses Next.js standalone output. `npm run start` copies required static assets into the standalone folder, then starts the generated server.
+## Data Integrity
 
-## Main Pages
+StrategyGPT AI does not use dummy candles or synthetic OHLCV history. If CoinMarketCap does not return enough daily candles for a meaningful backtest, the API returns an error instead of inventing data.
 
-- `/` — generator, backtest workbench, production status strip.
-- `/markets` — live CoinMarketCap quote, listings, Fear & Greed, and trending assets.
-- `/history` — saved reports from browser and server store.
-- `/onchain` — prepares and sends registry attestation transactions.
-- `/methodology` — explains parser, market data, indicators, risk, storage, and on-chain proof.
+Every generated report includes:
+
+- parser source and warning state
+- data provider and quote source
+- candle cadence
+- fee and slippage assumptions
+- generated strategy parameters
+- backtest trades and equity curve
+- risk analysis
+- optimized variants
+- hash version
+- canonical report JSON
 
 ## Environment
 
 Create `.env` from `.env.example`.
 
-```bash
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-5.5
-COINMARKETCAP_API_KEY=
-COINMARKETCAP_BASE_URL=https://pro-api.coinmarketcap.com
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_DEFAULT_CHAIN_ID=11155111
-NEXT_PUBLIC_STRATEGY_REGISTRY_ADDRESS=
-NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL=https://sepolia.etherscan.io/tx
-STRATEGYGPT_API_TOKEN=
-NEXT_PUBLIC_STRATEGYGPT_API_TOKEN=
-DATABASE_URL=
-UPSTASH_REDIS_REST_URL=
-UPSTASH_REDIS_REST_TOKEN=
-EXECUTION_FEE_BPS=10
-EXECUTION_SLIPPAGE_BPS=5
-RPC_URL=
-DEPLOYER_PRIVATE_KEY=
-```
-
-Required for normal app use:
-
-- `OPENAI_API_KEY`
-- `COINMARKETCAP_API_KEY`
-
-Required for production-grade persistence and rate limiting:
-
-- `DATABASE_URL`
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
-
-Required for private deployments:
-
-- `STRATEGYGPT_API_TOKEN`
-- `NEXT_PUBLIC_STRATEGYGPT_API_TOKEN`
-
-Required for on-chain publishing:
-
-- `NEXT_PUBLIC_DEFAULT_CHAIN_ID`
-- `NEXT_PUBLIC_STRATEGY_REGISTRY_ADDRESS`
-
-Required only when deploying the registry:
-
-- `RPC_URL`
-- `DEPLOYER_PRIVATE_KEY`
+| Variable | Purpose |
+| --- | --- |
+| `OPENAI_API_KEY` | Enables OpenAI structured strategy parsing. |
+| `OPENAI_MODEL` | Model used by the Responses API. Defaults to `gpt-5.5`. |
+| `COINMARKETCAP_API_KEY` | Required for live quote, listing, trending, and candle data. |
+| `COINMARKETCAP_BASE_URL` | Defaults to `https://pro-api.coinmarketcap.com`. |
+| `NEXT_PUBLIC_APP_URL` | Public app URL used in metadata and attestation metadata. |
+| `NEXT_PUBLIC_DEFAULT_CHAIN_ID` | Wallet chain target. Defaults to `11155111`. |
+| `NEXT_PUBLIC_STRATEGY_REGISTRY_ADDRESS` | Deployed registry contract address for on-chain publishing. |
+| `NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL` | Explorer transaction URL prefix. |
+| `STRATEGYGPT_API_TOKEN` | Optional server API gate for private deployments. |
+| `NEXT_PUBLIC_STRATEGYGPT_API_TOKEN` | Optional browser-side token paired with the server API gate. |
+| `DATABASE_URL` | Durable PostgreSQL report storage. Strongly recommended for production. |
+| `UPSTASH_REDIS_REST_URL` | Optional distributed rate-limit store. |
+| `UPSTASH_REDIS_REST_TOKEN` | Optional Upstash Redis REST token. |
+| `EXECUTION_FEE_BPS` | Backtest fee assumption in basis points. Defaults to `10`. |
+| `EXECUTION_SLIPPAGE_BPS` | Backtest slippage assumption in basis points. Defaults to `5`. |
+| `RPC_URL` | Registry deployment RPC endpoint. Not needed by the web runtime. |
+| `DEPLOYER_PRIVATE_KEY` | Registry deployment key. Never expose this to the browser or Vercel runtime unless you truly need deployment automation. |
 
 Rotate any API keys that were pasted into chat, logs, screenshots, or shared documents before using the app in production.
 
-## Run Locally
+## Local Development
 
 ```bash
 npm install
@@ -123,14 +118,22 @@ Then set:
 NEXT_PUBLIC_APP_URL=http://127.0.0.1:3002
 ```
 
-Without `DATABASE_URL`, local development stores reports in `.data/strategy-reports.json` plus browser localStorage. On Vercel, the file fallback uses `/tmp` and is volatile; set `DATABASE_URL` for durable production report history.
+Local report fallback:
 
-To run the production build locally:
+```text
+.data/strategy-reports.json
+```
+
+Without `DATABASE_URL`, Vercel uses `/tmp/strategygpt-reports.json`, which is volatile and can disappear between serverless invocations. Use Postgres for durable report history.
+
+## Production Build
 
 ```bash
 npm run build
 npm run start
 ```
+
+The app uses Next.js standalone output. `npm run start` copies required static assets into `.next/standalone`, then starts the generated server.
 
 PowerShell with a custom port:
 
@@ -145,18 +148,33 @@ npm run start
 docker compose up --build
 ```
 
-The compose file starts the app and PostgreSQL. Redis rate limiting is designed for Upstash Redis REST in production, configured through the `UPSTASH_REDIS_REST_*` variables.
+The compose file starts the app and PostgreSQL. Redis rate limiting is designed for Upstash Redis REST and is configured with the `UPSTASH_REDIS_REST_*` variables.
 
 ## Kubernetes
 
-Use `k8s/secret.example.yaml` as a template for real secrets, then deploy:
+Use `k8s/secret.example.yaml` as the shape for real secrets:
 
 ```bash
 kubectl apply -f k8s/secret.example.yaml
 kubectl apply -f k8s/strategygpt.yaml
 ```
 
-Replace the image in `k8s/strategygpt.yaml` with your pushed container image for a real cluster.
+Replace the image in `k8s/strategygpt.yaml` with your pushed container image before using a real cluster.
+
+## Vercel
+
+The project is designed to deploy cleanly on Vercel. `.vercelignore` excludes local secrets, local build output, node modules, smoke logs, and local report files.
+
+Useful commands:
+
+```bash
+npx vercel link
+npx vercel env add OPENAI_API_KEY production
+npx vercel env add COINMARKETCAP_API_KEY production
+npx vercel --prod
+```
+
+Set `DATABASE_URL` in Vercel for durable report history. Set `NEXT_PUBLIC_STRATEGY_REGISTRY_ADDRESS` only after the registry is deployed.
 
 ## Deploy The Registry Contract
 
@@ -176,38 +194,26 @@ npm run deploy:registry
 
 The script compiles and deploys `contracts/StrategyRegistry.sol`, prints the address, and writes a deployment artifact to `deployments/strategy-registry-<chainId>.json`.
 
-Copy the printed address into:
+After deployment, set:
 
 ```bash
 NEXT_PUBLIC_STRATEGY_REGISTRY_ADDRESS=0x...
 ```
 
-Restart the app after changing that value.
+Restart or redeploy the app after changing the address.
 
-## On-chain Flow
+## On-chain Proof Model
 
-1. Generate a report.
-2. The full report payload is canonicalized and hashed.
-3. `/api/onchain/prepare` recomputes the hash server-side and rejects tampered reports.
-4. The app prepares calldata for `StrategyRegistry.recordStrategy`.
-5. The wallet switches to the configured chain, signs, sends, and waits for a receipt.
-6. The transaction records the researcher, strategy hash, symbol, metadata URI, risk score, and block timestamp.
+The on-chain flow records proof of research, not trading authority.
 
-The registry includes version metadata, duplicate-hash protection, risk-score validation, and symbol/metadata length guards.
+1. Generate a strategy report.
+2. Canonicalize and hash the full report payload.
+3. `/api/onchain/prepare` recomputes the hash server-side.
+4. Tampered reports are rejected before calldata is returned.
+5. The wallet signs and sends `StrategyRegistry.recordStrategy`.
+6. The registry records researcher, strategy hash, symbol, metadata URI, risk score, and timestamp.
 
-## Data Integrity
-
-StrategyGPT AI does not use dummy candle data or synthetic OHLC candles. If CoinMarketCap does not return enough daily OHLCV candles, the API returns an error instead of inventing history.
-
-Every report includes provenance:
-
-- parser source
-- parser warning when fallback or parameter rescue is used
-- data provider and quote source
-- candle cadence
-- execution fee/slippage assumptions
-- hash version
-- canonical report JSON
+The registry includes duplicate-hash protection, risk-score validation, version metadata, and length guards for symbols and metadata URIs.
 
 ## Monitoring
 
@@ -223,7 +229,7 @@ Prometheus metrics:
 curl http://localhost:3000/api/metrics
 ```
 
-The UI also shows a production status strip for OpenAI, CoinMarketCap, registry, report store, Redis rate limit, API gate, and metrics.
+The homepage also shows a production status strip for OpenAI, CoinMarketCap, registry, report store, Redis rate limit, API gate, and metrics.
 
 ## Verification
 
@@ -235,22 +241,4 @@ npm run build
 npm audit --omit=dev
 ```
 
-Current tests cover:
-
-- deterministic backtest output
-- advanced indicator calculations
-- executable-variant behavior
-- on-chain metadata URI generation
-- configured registry calldata preparation
-- tampered report rejection
-- unconfigured registry setup messaging
-
-## Production Checklist
-
-- Deploy `StrategyRegistry` and set `NEXT_PUBLIC_STRATEGY_REGISTRY_ADDRESS`.
-- Rotate exposed API keys.
-- Set `DATABASE_URL` for durable report storage.
-- Set Upstash Redis REST variables for durable rate limits across instances.
-- Set `STRATEGYGPT_API_TOKEN` for private deployments.
-- Point `NEXT_PUBLIC_APP_URL` and `NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL` at production URLs.
-- Run the verification commands before shipping.
+Current tests cover deterministic backtests, advanced indicators, executable variant rescue, on-chain metadata URI generation, configured registry calldata, tampered report rejection, and unconfigured registry messaging.
