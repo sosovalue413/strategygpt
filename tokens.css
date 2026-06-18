@@ -1,0 +1,57 @@
+/* Hallmark · macrostructure: Workbench · tone: technical atmospheric · anchor hue: amber
+ * genre: atmospheric · theme: Midnight · enrichment: Tier-A CSS product canvas · nav: N5 · footer: Ft5
+ * pre-emit critique: P4 H4 E4 S4 R4 V4
+ */
+:root {
+  --color-paper: oklch(13% 0.018 266);
+  --color-paper-2: oklch(17% 0.022 266);
+  --color-paper-3: oklch(22% 0.026 266);
+  --color-ink: oklch(94% 0.008 68);
+  --color-ink-muted: oklch(73% 0.018 76);
+  --color-ink-soft: oklch(58% 0.018 76);
+  --color-rule: oklch(100% 0 0 / 0.13);
+  --color-rule-strong: oklch(100% 0 0 / 0.24);
+  --color-accent: oklch(77% 0.16 70);
+  --color-accent-ink: oklch(13% 0.018 266);
+  --color-accent-2: oklch(69% 0.18 29);
+  --color-success: oklch(75% 0.15 155);
+  --color-warning: oklch(82% 0.16 82);
+  --color-danger: oklch(67% 0.2 29);
+  --color-focus: oklch(82% 0.16 70);
+  --color-canvas-shadow: oklch(0% 0 0 / 0.38);
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+  --space-4xl: 6rem;
+  --page-gutter: clamp(1rem, 4vw, 2rem);
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.35rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: clamp(2rem, 4vw, 3rem);
+  --text-display-s: clamp(2.4rem, 7vw, 5.5rem);
+  --text-display: clamp(3rem, 10vw, 7.5rem);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.32, 0, 0.67, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 120ms;
+  --dur-med: 180ms;
+  --dur-slow: 280ms;
+  --rule-hair: 1px;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-pill: 999px;
+  --z-nav: 50;
+  --z-overlay: 80;
+}
